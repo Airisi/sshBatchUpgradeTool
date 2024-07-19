@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1800</width>
+                <height>1000</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>SSH Batch Upgrade Tool</string>
+        </property>
+        <property name="styleSheet">
+            <string>
+                QPushButton {
+                background-color: #EAEAEA;
+                color: black;
+                border: 1px solid #A0A0A0;
+                border-radius: 6px;
+                padding: 12px 20px;
+                font-size: 20px;
+                }
+                QPushButton:hover {
+                background-color: #F5F5F5;
+                }
+                QPushButton:pressed {
+                background-color: #D0D0D0;
+                }
+                QPushButton:disabled {
+                background-color: #E0E0E0;
+                }
+                QLineEdit {
+                background-color: white;
+                border: 1px solid #A0A0A0;
+                border-radius: 4px;
+                padding: 8px;
+                font-size: 20px;
+                }
+                QGroupBox {
+                border: 1px solid #A0A0A0;
+                border-radius: 4px;
+                margin-top: 20px;
+                }
+                QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                background-color: white;
+                }
+                QTableWidget {
+                border: 1px solid #A0A0A0;
+                border-radius: 4px;
+                font-size: 20px;
+                gridline-color: #D0D0D0;
+                }
+                QHeaderView::section {
+                background-color: #F0F0F0;
+                padding: 4px;
+                border: 1px solid #D0D0D0;
+                }
+                QTableWidget::item:first {
+                background-color: #D0E4FF;
+                }
+            </string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <widget class="QGroupBox" name="sshSettingsGroup">
+                        <property name="title">
+                            <string>SSH Settings</string>
+                        </property>
+                        <layout class="QVBoxLayout" name="verticalLayout_2">
+                            <item>
+                                <layout class="QHBoxLayout" name="horizontalLayout">
+                                    <item>
+                                        <widget class="QLabel" name="ipLabel">
+                                            <property name="text">
+                                                <string>Host:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QLineEdit" name="ipEntry">
+                                            <property name="text">
+                                                <string>192.168.65.248</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QLabel" name="usernameLabel">
+                                            <property name="text">
+                                                <string>Username:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QLineEdit" name="usernameEntry">
+                                            <property name="text">
+                                                <string>root</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QLabel" name="passwordLabel">
+                                            <property name="text">
+                                                <string>Password:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QLineEdit" name="passwordEntry">
+                                            <property name="echoMode">
+                                                <enum>QLineEdit::Password</enum>
+                                            </property>
+                                            <property name="text">
+                                                <string>ht123</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QPushButton" name="addSSHConfigButton">
+                                            <property name="text">
+                                                <string>Add SSH Config</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </item>
+                            <item>
+                                <layout class="QFormLayout" name="formLayout">
+                                    <property name="labelAlignment">
+                                        <set>Qt::AlignLeft|Qt::AlignVCenter</set>
+                                    </property>
+                                    <property name="formAlignment">
+                                        <set>Qt::AlignLeft|Qt::AlignTop</set>
+                                    </property>
+                                    <property name="fieldGrowthPolicy">
+                                        <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+                                    </property>
+                                    <item row="0" column="0">
+                                        <widget class="QLabel" name="upgradeFileLabel">
+                                            <property name="text">
+                                                <string>Upgrade File:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="0" column="1">
+                                        <layout class="QHBoxLayout">
+                                            <item>
+                                                <widget class="QLineEdit" name="upgradeFileEntry"/>
+                                            </item>
+                                            <item>
+                                                <widget class="QPushButton" name="upgradeFileButton">
+                                                    <property name="text">
+                                                        <string>Select File</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                    <item row="1" column="0">
+                                        <widget class="QLabel" name="upgradeScriptLabel">
+                                            <property name="text">
+                                                <string>Upgrade Script:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="1">
+                                        <layout class="QHBoxLayout">
+                                            <item>
+                                                <widget class="QLineEdit" name="upgradeScriptEntry"/>
+                                            </item>
+                                            <item>
+                                                <widget class="QPushButton" name="upgradeScriptButton">
+                                                    <property name="text">
+                                                        <string>Select File</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                </layout>
+                            </item>
+                            <item>
+                                <widget class="QTableWidget" name="sshConfigTable"/>
+                            </item>
+                            <item>
+                                <layout class="QHBoxLayout" name="importExportLayout">
+                                    <item>
+                                        <widget class="QPushButton" name="clearConfigTableButton">
+                                            <property name="text">
+                                                <string>Clear</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QPushButton" name="connectAllButton">
+                                            <property name="text">
+                                                <string>Upgrade All</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </item>
+                            <item>
+                                <layout class="QHBoxLayout" name="importExportLayout">
+                                    <item>
+                                        <widget class="QPushButton" name="importButton">
+                                            <property name="text">
+                                                <string>Import Config</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QPushButton" name="exportButton">
+                                            <property name="text">
+                                                <string>Export Config</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </item>
+                        </layout>
+                    </widget>
+                </item>
+
+            </layout>
+        </widget>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>
