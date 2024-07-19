@@ -7,7 +7,7 @@ from PyQt5 import uic
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QPushButton, QLineEdit, \
     QVBoxLayout, QDialog, QFileDialog
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QFileInfo, QByteArray
 from ssh_manager import SSHManager
 from upgrade_manager import UpgradeManager
 
@@ -73,6 +73,7 @@ class MainWindow(QMainWindow):
         加载UI界面并设置升级按钮的点击事件。
         """
         super().__init__()
+        self._last_opened_dir = None
         uic.loadUi('ui/main_window.ui', self)
         self.addSSHConfigButton.clicked.connect(self.add_ssh_config)
         self.connectAllButton.clicked.connect(self.connect_all)
@@ -92,16 +93,19 @@ class MainWindow(QMainWindow):
         self.load_config()
 
     def select_upgrade_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Upgrade File", "", "All Files (*)")
+        initial_dir = self.get_last_opened_dir()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Upgrade File", initial_dir, "All Files (*)")
         if file_path:
             self.upgradeFileEntry.setText(file_path)
-            self.save_config()  # 保存配置
+            self.save_last_opened_dir(file_path)
 
     def select_upgrade_script(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Upgrade Script", "", "Shell Scripts (*.sh);;All Files (*)")
+        initial_dir = self.get_last_opened_dir()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Upgrade Script", initial_dir,
+                                                   "Shell Scripts (*.sh);;All Files (*)")
         if file_path:
             self.upgradeScriptEntry.setText(file_path)
-            self.save_config()  # 保存配置
+            self.save_last_opened_dir(file_path)
 
     def add_ssh_config(self):
         """
@@ -126,8 +130,6 @@ class MainWindow(QMainWindow):
             delete_button.clicked.connect(lambda _, r=row_position: self.delete_ssh_config(r))
             self.sshConfigTable.setCellWidget(row_position, 4, delete_button)
 
-            self.save_config()  # 保存配置
-
     def delete_ssh_config(self, row):
         self.sshConfigTable.removeRow(row)
         # 更新所有删除按钮的lambda函数
@@ -140,15 +142,12 @@ class MainWindow(QMainWindow):
             delete_button.clicked.disconnect()
             delete_button.clicked.connect(lambda _, r=i: self.delete_ssh_config(r))
 
-        self.save_config()  # 保存配置
-
     def clear_ssh_configs(self):
         """
         清空SSH配置。
         """
         self.sshConfigTable.clearContents()
         self.sshConfigTable.setRowCount(0)
-        self.save_config()  # 保存配置
 
     async def connect_ssh(self, row):
         """
@@ -227,84 +226,159 @@ class MainWindow(QMainWindow):
         self.workers = [w for w in self.workers if w.isRunning()]
 
         # 打印每个worker的状态
-        # for w in self.workers:
-        #     print(f"Worker {w} is running: {w.isRunning()}")
+        for w in self.workers:
+            print(f"Worker {w.row} is running: {w.isRunning()}")
 
-        # 检查是否所有的worker都完成了工作
-        if all(not w.isRunning() for w in self.workers):
-            self.connectAllButton.setEnabled(True)  # 启用“连接全部”按钮
+        # 检查是否所有worker均已完成
+        if not self.workers:
+            self.connectAllButton.setEnabled(True)
+
+    def load_ssh_configs(self):
+        initial_dir = self.get_last_opened_dir()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load SSH Configs", initial_dir,
+                                                   "CSV Files (*.csv);;All Files (*)")
+        if file_path:
+            df = pd.read_csv(file_path)
+            self.sshConfigTable.setRowCount(0)
+            for index, row in df.iterrows():
+                row_position = self.sshConfigTable.rowCount()
+                self.sshConfigTable.insertRow(row_position)
+
+                self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(row['IP']))
+                self.sshConfigTable.setItem(row_position, 1, QTableWidgetItem(row['Username']))
+                self.sshConfigTable.setItem(row_position, 2, QTableWidgetItem(row['Password']))
+
+                upgrade_button = QPushButton('Upgrade')
+                upgrade_button.clicked.connect(lambda _, r=row_position: self.connect_selected(r))
+                self.sshConfigTable.setCellWidget(row_position, 3, upgrade_button)
+
+                delete_button = QPushButton('Delete')
+                delete_button.clicked.connect(lambda _, r=row_position: self.delete_ssh_config(r))
+                self.sshConfigTable.setCellWidget(row_position, 4, delete_button)
+
+            self.save_last_opened_dir(file_path)
+
+    def save_ssh_configs(self):
+        initial_dir = self.get_last_opened_dir()
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save SSH Configs", initial_dir,
+                                                   "CSV Files (*.csv);;All Files (*)")
+        if file_path:
+            data = []
+            for row in range(self.sshConfigTable.rowCount()):
+                data.append({
+                    'IP': self.sshConfigTable.item(row, 0).text(),
+                    'Username': self.sshConfigTable.item(row, 1).text(),
+                    'Password': self.sshConfigTable.item(row, 2).text()
+                })
+            df = pd.DataFrame(data)
+            df.to_csv(file_path, index=False)
+            self.save_last_opened_dir(file_path)
 
     def save_config(self):
+        """
+        保存配置到 config.json 文件。
+        """
         config = {
+            'geometry': self.saveGeometry().toHex().data().decode(),
+            'state': self.saveState().toHex().data().decode(),
             'upgrade_file': self.upgradeFileEntry.text(),
             'upgrade_script': self.upgradeScriptEntry.text(),
+            'last_opened_dir': self.get_last_opened_dir() + '/',
+            'ssh_configs': [
+                {
+                    'IP': self.sshConfigTable.item(row, 0).text(),
+                    'Username': self.sshConfigTable.item(row, 1).text(),
+                    'Password': self.sshConfigTable.item(row, 2).text()
+                }
+                for row in range(self.sshConfigTable.rowCount())
+            ],
+            'entries': {
+                'ip': self.ipEntry.text(),
+                'username': self.usernameEntry.text(),
+                'password': self.passwordEntry.text()
+            }
         }
         with open(self.CONFIG_FILE, 'w') as f:
             json.dump(config, f)
 
     def load_config(self):
+        """
+        从 config.json 文件加载配置。
+        """
         try:
             with open(self.CONFIG_FILE, 'r') as f:
                 config = json.load(f)
-                self.upgradeFileEntry.setText(config.get('upgrade_file', ''))
-                self.upgradeScriptEntry.setText(config.get('upgrade_script', ''))
+                geometry = config.get('geometry')
+                state = config.get('state')
+                upgrade_file = config.get('upgrade_file', '')
+                upgrade_script = config.get('upgrade_script', '')
+                last_opened_dir = config.get('last_opened_dir', '')
+                ssh_configs = config.get('ssh_configs', [])
+                entries = config.get('entries', {})
+
+                if geometry:
+                    self.restoreGeometry(QByteArray.fromHex(geometry.encode()))
+
+                if state:
+                    self.restoreState(QByteArray.fromHex(state.encode()))
+
+                self.upgradeFileEntry.setText(upgrade_file)
+                self.upgradeScriptEntry.setText(upgrade_script)
+
+                # 设置 last_opened_dir 而不引发错误
+                self.set_last_opened_dir(last_opened_dir)
+
+                # 加载 SSH 配置
+                for ssh_config in ssh_configs:
+                    row_position = self.sshConfigTable.rowCount()
+                    self.sshConfigTable.insertRow(row_position)
+                    self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(ssh_config.get('IP', '')))
+                    self.sshConfigTable.setItem(row_position, 1, QTableWidgetItem(ssh_config.get('Username', '')))
+                    self.sshConfigTable.setItem(row_position, 2, QTableWidgetItem(ssh_config.get('Password', '')))
+
+                    upgrade_button = QPushButton('Upgrade')
+                    upgrade_button.clicked.connect(lambda _, r=row_position: self.connect_selected(r))
+                    self.sshConfigTable.setCellWidget(row_position, 3, upgrade_button)
+
+                    delete_button = QPushButton('Delete')
+                    delete_button.clicked.connect(lambda _, r=row_position: self.delete_ssh_config(r))
+                    self.sshConfigTable.setCellWidget(row_position, 4, delete_button)
+
+                ip = entries.get('ip', '')
+                username = entries.get('username', '')
+                password = entries.get('password', '')
+
+                self.ipEntry.setText(ip)
+                self.usernameEntry.setText(username)
+                self.passwordEntry.setText(password)
+
         except FileNotFoundError:
+            # 如果配置文件不存在，不执行任何操作
             pass
+        except Exception as e:
+            # 捕获并记录其他可能的异常
+            print(f"Error loading configuration: {e}")
 
-    def save_ssh_configs(self):
+    def get_last_opened_dir(self):
+        return getattr(self, '_last_opened_dir', '')
+
+    def set_last_opened_dir(self, path):
+        self._last_opened_dir = QFileInfo(path).absolutePath() if path else ''
+
+    def save_last_opened_dir(self, path):
+        self.set_last_opened_dir(path)
+        self.save_config()
+
+    def closeEvent(self, event):
         """
-        保存SSH配置到文件。
+        处理窗口关闭事件，确保在关闭前保存配置。
         """
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save SSH Configs", "", "CSV Files (*.csv)")
-        if file_path:
-            data = []
-            for row in range(self.sshConfigTable.rowCount()):
-                row_data = []
-                for column in range(self.sshConfigTable.columnCount()):
-                    item = self.sshConfigTable.item(row, column)
-                    if item:
-                        row_data.append(item.text())
-                    else:
-                        widget = self.sshConfigTable.cellWidget(row, column)
-                        if widget and isinstance(widget, QPushButton):
-                            row_data.append(widget.text())
-                        else:
-                            row_data.append('')
-                data.append(row_data)
-            df = pd.DataFrame(data, columns=['IP', 'Username', 'Password', 'Upgrade', 'Delete', 'State', 'Logs'])
-            df.to_csv(file_path, index=False)
-
-    def load_ssh_configs(self):
-        """
-        从文件加载SSH配置。
-        """
-        file_path, _ = QFileDialog.getOpenFileName(self, "Load SSH Configs", "", "CSV Files (*.csv)")
-        if file_path:
-            df = pd.read_csv(file_path)
-            self.sshConfigTable.setRowCount(len(df))
-            for row in range(len(df)):
-                for column in range(len(df.columns)):
-                    item = QTableWidgetItem(str(df.iat[row, column]))
-                    self.sshConfigTable.setItem(row, column, item)
-
-                upgrade_button = QPushButton('Upgrade')
-                upgrade_button.clicked.connect(lambda _, r=row: self.connect_selected(r))
-                self.sshConfigTable.setCellWidget(row, 3, upgrade_button)
-
-                delete_button = QPushButton('Delete')
-                delete_button.clicked.connect(lambda _, r=row: self.delete_ssh_config(r))
-                self.sshConfigTable.setCellWidget(row, 4, delete_button)
-
-
-def main():
-    """
-    主函数，启动应用程序。
-    """
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+        self.save_config()
+        event.accept()
 
 
 if __name__ == '__main__':
-    main()
+    app = QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.show()
+    sys.exit(app.exec_())

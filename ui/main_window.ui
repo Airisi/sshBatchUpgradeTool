@@ -70,9 +70,6 @@
             <layout class="QVBoxLayout" name="verticalLayout">
                 <item>
                     <widget class="QGroupBox" name="sshSettingsGroup">
-                        <property name="title">
-                            <string>SSH Settings</string>
-                        </property>
                         <layout class="QVBoxLayout" name="verticalLayout_2">
                             <item>
                                 <layout class="QHBoxLayout" name="horizontalLayout">
@@ -86,7 +83,7 @@
                                     <item>
                                         <widget class="QLineEdit" name="ipEntry">
                                             <property name="text">
-                                                <string>192.168.65.248</string>
+                                                <string>192.168.1.1</string>
                                             </property>
                                         </widget>
                                     </item>
@@ -113,11 +110,12 @@
                                     </item>
                                     <item>
                                         <widget class="QLineEdit" name="passwordEntry">
-                                            <property name="echoMode">
-                                                <enum>QLineEdit::Password</enum>
-                                            </property>
+<!--                                            隐藏密码显示-->
+<!--                                            <property name="echoMode">-->
+<!--                                                <enum>QLineEdit::Password</enum>-->
+<!--                                            </property>-->
                                             <property name="text">
-                                                <string>ht123</string>
+                                                <string>Password</string>
                                             </property>
                                         </widget>
                                     </item>

@@ -1,26 +1,4 @@
-# class UpgradeManager:
-#     def __init__(self, ssh_manager):
-#         self.ssh_manager = ssh_manager
-#
-#     async def perform_upgrade_async(self):
-#         if not await self.ssh_manager.ping_host():
-#             raise Exception(f'Host {self.ssh_manager.host} is not reachable.')
-#
-#         try:
-#             await self.ssh_manager.connect_async()
-#             stdout, stderr = await self.ssh_manager.execute_command_async('echo 1 >> /home/yyz/ssh_test')
-#             await self.ssh_manager.close_async()
-#             if stderr:
-#                 raise Exception(stderr)
-#             return stdout or "Successfully upgrade."
-#         except Exception as e:
-#             raise Exception(str(e))
-import asyncio
 import os
-
-
-import os
-import asyncssh
 
 
 class UpgradeManager:
