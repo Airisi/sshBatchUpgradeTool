@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import json
@@ -64,8 +65,7 @@ class MainWindow(QMainWindow):
     主窗口类，继承自QMainWindow。
     提供UI界面和升级内核的功能。
     """
-
-    CONFIG_FILE = 'config.json'
+    CONFIG_FILE = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__))), 'config.json')
 
     def __init__(self):
         """
@@ -73,8 +73,10 @@ class MainWindow(QMainWindow):
         加载UI界面并设置升级按钮的点击事件。
         """
         super().__init__()
-        self._last_opened_dir = None
-        uic.loadUi('ui/main_window.ui', self)
+        self._last_opened_dir = ''
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        ui_path = os.path.join(base_path, 'ui/main_window.ui')
+        uic.loadUi(ui_path, self)
         self.addSSHConfigButton.clicked.connect(self.add_ssh_config)
         self.connectAllButton.clicked.connect(self.connect_all)
         self.upgradeFileButton.clicked.connect(self.select_upgrade_file)
@@ -226,8 +228,8 @@ class MainWindow(QMainWindow):
         self.workers = [w for w in self.workers if w.isRunning()]
 
         # 打印每个worker的状态
-        for w in self.workers:
-            print(f"Worker {w.row} is running: {w.isRunning()}")
+        # for w in self.workers:
+        #     print(f"Worker {w.row} is running: {w.isRunning()}")
 
         # 检查是否所有worker均已完成
         if not self.workers:

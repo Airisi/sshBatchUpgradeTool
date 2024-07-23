@@ -97,7 +97,7 @@
                                     <item>
                                         <widget class="QLineEdit" name="usernameEntry">
                                             <property name="text">
-                                                <string>root</string>
+                                                <string>admin</string>
                                             </property>
                                         </widget>
                                     </item>
@@ -110,12 +110,12 @@
                                     </item>
                                     <item>
                                         <widget class="QLineEdit" name="passwordEntry">
-<!--                                            隐藏密码显示-->
-<!--                                            <property name="echoMode">-->
-<!--                                                <enum>QLineEdit::Password</enum>-->
-<!--                                            </property>-->
+                                            <!--                                            隐藏密码显示-->
+                                            <!--                                            <property name="echoMode">-->
+                                            <!--                                                <enum>QLineEdit::Password</enum>-->
+                                            <!--                                            </property>-->
                                             <property name="text">
-                                                <string>Password</string>
+                                                <string>password</string>
                                             </property>
                                         </widget>
                                     </item>

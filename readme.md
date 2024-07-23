@@ -104,6 +104,37 @@ IP,Username,Password
 192.168.1.2,root,rootpassword
 192.168.1.3,user,userpass
 ```
+### 使用PyInstaller打包
+
+#### 安装PyInstaller
+
+首先，确保在虚拟环境中安装PyInstaller：
+
+```sh
+pip install pyinstaller
+```
+
+#### 打包应用程序
+
+在项目根目录中运行以下命令以使用PyInstaller打包应用程序：
+
+```sh
+pyinstaller SSHTool.spec
+```
+
+这将生成`dist/UpgradeTool`目录，其中包含打包后的可执行文件。
+
+#### 运行打包后的应用程序
+
+进入`dist/UpgradeTool`目录，并运行生成的可执行文件：
+
+```sh
+cd dist/UpgradeTool
+./UpgradeTool.exe  # 对于Windows系统使用 `UpgradeTool.exe`
+```
+这样，你就可以成功地打包并运行你的应用程序了。
+
+### 总结
 
 此项目旨在简化多台远程主机的 SSH 配置管理和升级操作，通过图形界面和异步处理提高效率。希望此工具能为您的远程管理工作带来便利。
 
