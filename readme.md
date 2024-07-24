@@ -86,7 +86,7 @@ python main.py
 导入的 CSV 文件需要满足以下格式：
 
 ```csv
-IP,Username,Password
+Host,Username,Password
 192.168.0.1,user1,password1
 192.168.0.2,user2,password2
 192.168.0.3,user3,password3
@@ -94,16 +94,6 @@ IP,Username,Password
 
 每行表示一个 SSH 配置信息，包含三个字段：IP 地址、用户名和密码。确保文件没有额外的空行或格式错误。
 
-### 示例 CSV 文件
-
-以下是一个示例 CSV 文件内容，用户可以参考此模板创建自己的配置文件：
-
-```csv
-IP,Username,Password
-192.168.1.1,admin,admin123
-192.168.1.2,root,rootpassword
-192.168.1.3,user,userpass
-```
 ### 使用PyInstaller打包
 
 #### 安装PyInstaller

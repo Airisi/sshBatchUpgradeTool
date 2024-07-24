@@ -74,14 +74,14 @@
                             <item>
                                 <layout class="QHBoxLayout" name="horizontalLayout">
                                     <item>
-                                        <widget class="QLabel" name="ipLabel">
+                                        <widget class="QLabel" name="hostLabel">
                                             <property name="text">
                                                 <string>Host:</string>
                                             </property>
                                         </widget>
                                     </item>
                                     <item>
-                                        <widget class="QLineEdit" name="ipEntry">
+                                        <widget class="QLineEdit" name="hostEntry">
                                             <property name="text">
                                                 <string>192.168.1.1</string>
                                             </property>

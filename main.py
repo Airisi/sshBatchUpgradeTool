@@ -14,14 +14,14 @@ from upgrade_manager import UpgradeManager
 
 
 class SSHConfigEditor(QDialog):
-    def __init__(self, ip, username, password, parent=None):
+    def __init__(self, host, username, password, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Edit SSH Config")
         self.layout = QVBoxLayout(self)
 
-        self.ip_entry = QLineEdit(self)
-        self.ip_entry.setText(ip)
-        self.layout.addWidget(self.ip_entry)
+        self.host_Entry = QLineEdit(self)
+        self.host_Entry.setText(host)
+        self.layout.addWidget(self.host_Entry)
 
         self.username_entry = QLineEdit(self)
         self.username_entry.setText(username)
@@ -37,7 +37,7 @@ class SSHConfigEditor(QDialog):
         self.layout.addWidget(self.save_button)
 
     def get_data(self):
-        return self.ip_entry.text(), self.username_entry.text(), self.password_entry.text()
+        return self.host_Entry.text(), self.username_entry.text(), self.password_entry.text()
 
 
 class AsyncWorker(QThread):
@@ -65,7 +65,19 @@ class MainWindow(QMainWindow):
     主窗口类，继承自QMainWindow。
     提供UI界面和升级内核的功能。
     """
+    # 保存配置文件路径
     CONFIG_FILE = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__))), 'config.json')
+
+    # 定义表格初始列宽
+    INITIAL_COLUMN_WIDTHS = {
+        0: 200,  # Host
+        1: 200,  # Username
+        2: 200,  # Password
+        3: 200,  # State
+        4: 560,  # Logs
+        5: 200,  # Upgrade
+        6: 200   # Delete
+    }
 
     def __init__(self):
         """
@@ -81,11 +93,13 @@ class MainWindow(QMainWindow):
         self.connectAllButton.clicked.connect(self.connect_all)
         self.upgradeFileButton.clicked.connect(self.select_upgrade_file)
         self.upgradeScriptButton.clicked.connect(self.select_upgrade_script)
+
         self.sshConfigTable.setColumnCount(7)
         self.sshConfigTable.setHorizontalHeaderLabels(
-            ['IP', 'Username', 'Password', 'Upgrade', 'Delete', 'State', 'Logs'])
-        header = self.sshConfigTable.horizontalHeader()
-        header.setStretchLastSection(True)
+            ['Host', 'Username', 'Password', 'State', 'Logs', 'Upgrade', 'Delete'])
+        for col, width in self.INITIAL_COLUMN_WIDTHS.items():
+            self.sshConfigTable.setColumnWidth(col, width)
+
         self.importButton.clicked.connect(self.load_ssh_configs)
         self.exportButton.clicked.connect(self.save_ssh_configs)
         self.clearConfigTableButton.clicked.connect(self.clear_ssh_configs)
@@ -113,34 +127,34 @@ class MainWindow(QMainWindow):
         """
         添加新的SSH配置。
         """
-        ip = self.ipEntry.text()
+        host = self.hostEntry.text()
         username = self.usernameEntry.text()
         password = self.passwordEntry.text()
-        if ip and username and password:
+        if host and username and password:
             row_position = self.sshConfigTable.rowCount()
             self.sshConfigTable.insertRow(row_position)
 
-            self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(ip))
+            self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(host))
             self.sshConfigTable.setItem(row_position, 1, QTableWidgetItem(username))
             self.sshConfigTable.setItem(row_position, 2, QTableWidgetItem(password))
 
             upgrade_button = QPushButton('Upgrade')
             upgrade_button.clicked.connect(lambda _, r=row_position: self.connect_selected(r))
-            self.sshConfigTable.setCellWidget(row_position, 3, upgrade_button)
+            self.sshConfigTable.setCellWidget(row_position, 5, upgrade_button)
 
             delete_button = QPushButton('Delete')
             delete_button.clicked.connect(lambda _, r=row_position: self.delete_ssh_config(r))
-            self.sshConfigTable.setCellWidget(row_position, 4, delete_button)
+            self.sshConfigTable.setCellWidget(row_position, 6, delete_button)
 
     def delete_ssh_config(self, row):
         self.sshConfigTable.removeRow(row)
-        # 更新所有删除按钮的lambda函数
+        # 更新所有升级和删除按钮的lambda函数
         for i in range(self.sshConfigTable.rowCount()):
-            upgrade_button = self.sshConfigTable.cellWidget(i, 3)
+            upgrade_button = self.sshConfigTable.cellWidget(i, 5)
             upgrade_button.clicked.disconnect()
             upgrade_button.clicked.connect(lambda _, r=i: self.connect_selected(r))
 
-            delete_button = self.sshConfigTable.cellWidget(i, 4)
+            delete_button = self.sshConfigTable.cellWidget(i, 6)
             delete_button.clicked.disconnect()
             delete_button.clicked.connect(lambda _, r=i: self.delete_ssh_config(r))
 
@@ -155,10 +169,10 @@ class MainWindow(QMainWindow):
         """
         连接SSH并执行升级操作。
         """
-        ip = self.sshConfigTable.item(row, 0).text()
+        host = self.sshConfigTable.item(row, 0).text()
         username = self.sshConfigTable.item(row, 1).text()
         password = self.sshConfigTable.item(row, 2).text()
-        ssh_manager = SSHManager(ip, username, password)
+        ssh_manager = SSHManager(host, username, password)
         upgrade_manager = UpgradeManager(ssh_manager)
         try:
             result = await upgrade_manager.perform_upgrade_async()
@@ -167,11 +181,11 @@ class MainWindow(QMainWindow):
             stdout, stderr = result
             if stderr:
                 raise Exception(stderr)
-            self.sshConfigTable.setItem(row, 5, QTableWidgetItem("Success"))
-            self.sshConfigTable.setItem(row, 6, QTableWidgetItem(stdout))
+            self.sshConfigTable.setItem(row, 3, QTableWidgetItem("Success"))
+            self.sshConfigTable.setItem(row, 4, QTableWidgetItem(stdout))
         except Exception as e:
-            self.sshConfigTable.setItem(row, 5, QTableWidgetItem("Fail"))
-            self.sshConfigTable.setItem(row, 6, QTableWidgetItem(str(e)))
+            self.sshConfigTable.setItem(row, 3, QTableWidgetItem("Fail"))
+            self.sshConfigTable.setItem(row, 4, QTableWidgetItem(str(e)))
 
     def connect_all(self):
         """
@@ -182,7 +196,7 @@ class MainWindow(QMainWindow):
             self.connect_selected(row)
 
     def connect_selected(self, row):
-        ip = self.sshConfigTable.item(row, 0).text()
+        host = self.sshConfigTable.item(row, 0).text()
         username = self.sshConfigTable.item(row, 1).text()
         password = self.sshConfigTable.item(row, 2).text()
         upgrade_file = self.upgradeFileEntry.text()
@@ -192,7 +206,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please select both upgrade file and script.")
             return
 
-        ssh_manager = SSHManager(ip, username, password)
+        ssh_manager = SSHManager(host, username, password)
         upgrade_manager = UpgradeManager(ssh_manager)
 
         worker = AsyncWorker(upgrade_manager.perform_upgrade_async(upgrade_file, upgrade_script), row)
@@ -200,7 +214,7 @@ class MainWindow(QMainWindow):
         self.workers.append(worker)
         worker.start()
 
-        upgrade_button = self.sshConfigTable.cellWidget(row, 3)
+        upgrade_button = self.sshConfigTable.cellWidget(row, 5)
         upgrade_button.setEnabled(False)
 
     def on_worker_finished(self, row, status, message):
@@ -214,11 +228,11 @@ class MainWindow(QMainWindow):
             status_item.setForeground(QColor("red"))
             message_item.setForeground(QColor("red"))
 
-        self.sshConfigTable.setItem(row, 5, status_item)
-        self.sshConfigTable.setItem(row, 6, message_item)
+        self.sshConfigTable.setItem(row, 3, status_item)
+        self.sshConfigTable.setItem(row, 4, message_item)
 
         # 启用升级按钮
-        upgrade_button = self.sshConfigTable.cellWidget(row, 3)  # 注意：升级按钮在第4列（索引3）
+        upgrade_button = self.sshConfigTable.cellWidget(row, 5)  # 注意：升级按钮在第6列（索引5）
         upgrade_button.setEnabled(True)
 
         # 延时0.1秒 确保当前worker为停止状态
@@ -246,17 +260,17 @@ class MainWindow(QMainWindow):
                 row_position = self.sshConfigTable.rowCount()
                 self.sshConfigTable.insertRow(row_position)
 
-                self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(row['IP']))
+                self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(row['Host']))
                 self.sshConfigTable.setItem(row_position, 1, QTableWidgetItem(row['Username']))
                 self.sshConfigTable.setItem(row_position, 2, QTableWidgetItem(row['Password']))
 
                 upgrade_button = QPushButton('Upgrade')
                 upgrade_button.clicked.connect(lambda _, r=row_position: self.connect_selected(r))
-                self.sshConfigTable.setCellWidget(row_position, 3, upgrade_button)
+                self.sshConfigTable.setCellWidget(row_position, 5, upgrade_button)
 
                 delete_button = QPushButton('Delete')
                 delete_button.clicked.connect(lambda _, r=row_position: self.delete_ssh_config(r))
-                self.sshConfigTable.setCellWidget(row_position, 4, delete_button)
+                self.sshConfigTable.setCellWidget(row_position, 6, delete_button)
 
             self.save_last_opened_dir(file_path)
 
@@ -268,7 +282,7 @@ class MainWindow(QMainWindow):
             data = []
             for row in range(self.sshConfigTable.rowCount()):
                 data.append({
-                    'IP': self.sshConfigTable.item(row, 0).text(),
+                    'Host': self.sshConfigTable.item(row, 0).text(),
                     'Username': self.sshConfigTable.item(row, 1).text(),
                     'Password': self.sshConfigTable.item(row, 2).text()
                 })
@@ -288,16 +302,20 @@ class MainWindow(QMainWindow):
             'last_opened_dir': self.get_last_opened_dir() + '/',
             'ssh_configs': [
                 {
-                    'IP': self.sshConfigTable.item(row, 0).text(),
+                    'Host': self.sshConfigTable.item(row, 0).text(),
                     'Username': self.sshConfigTable.item(row, 1).text(),
                     'Password': self.sshConfigTable.item(row, 2).text()
                 }
                 for row in range(self.sshConfigTable.rowCount())
             ],
             'entries': {
-                'ip': self.ipEntry.text(),
+                'host': self.hostEntry.text(),
                 'username': self.usernameEntry.text(),
                 'password': self.passwordEntry.text()
+            },
+            'table_column_widths': {
+                str(i): self.sshConfigTable.columnWidth(i)
+                for i in range(self.sshConfigTable.columnCount())
             }
         }
         with open(self.CONFIG_FILE, 'w') as f:
@@ -317,6 +335,7 @@ class MainWindow(QMainWindow):
                 last_opened_dir = config.get('last_opened_dir', '')
                 ssh_configs = config.get('ssh_configs', [])
                 entries = config.get('entries', {})
+                column_widths = config.get('table_column_widths', {})
 
                 if geometry:
                     self.restoreGeometry(QByteArray.fromHex(geometry.encode()))
@@ -330,27 +349,30 @@ class MainWindow(QMainWindow):
                 # 设置 last_opened_dir 而不引发错误
                 self.set_last_opened_dir(last_opened_dir)
 
+                for col, width in column_widths.items():
+                    self.sshConfigTable.setColumnWidth(int(col), width)
+
                 # 加载 SSH 配置
                 for ssh_config in ssh_configs:
                     row_position = self.sshConfigTable.rowCount()
                     self.sshConfigTable.insertRow(row_position)
-                    self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(ssh_config.get('IP', '')))
+                    self.sshConfigTable.setItem(row_position, 0, QTableWidgetItem(ssh_config.get('Host', '')))
                     self.sshConfigTable.setItem(row_position, 1, QTableWidgetItem(ssh_config.get('Username', '')))
                     self.sshConfigTable.setItem(row_position, 2, QTableWidgetItem(ssh_config.get('Password', '')))
 
                     upgrade_button = QPushButton('Upgrade')
                     upgrade_button.clicked.connect(lambda _, r=row_position: self.connect_selected(r))
-                    self.sshConfigTable.setCellWidget(row_position, 3, upgrade_button)
+                    self.sshConfigTable.setCellWidget(row_position, 5, upgrade_button)
 
                     delete_button = QPushButton('Delete')
                     delete_button.clicked.connect(lambda _, r=row_position: self.delete_ssh_config(r))
-                    self.sshConfigTable.setCellWidget(row_position, 4, delete_button)
+                    self.sshConfigTable.setCellWidget(row_position, 6, delete_button)
 
-                ip = entries.get('ip', '')
+                host = entries.get('host', '')
                 username = entries.get('username', '')
                 password = entries.get('password', '')
 
-                self.ipEntry.setText(ip)
+                self.hostEntry.setText(host)
                 self.usernameEntry.setText(username)
                 self.passwordEntry.setText(password)
 
