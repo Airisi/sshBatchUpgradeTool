@@ -191,6 +191,13 @@ class MainWindow(QMainWindow):
         """
         为所有SSH配置创建并启动异步工作线程。
         """
+        upgrade_file = self.upgradeFileEntry.text()
+        upgrade_script = self.upgradeScriptEntry.text()
+
+        if not upgrade_file or not upgrade_script:
+            QMessageBox.warning(self, "Warning", "Please select both upgrade file and script.")
+            return
+
         self.connectAllButton.setEnabled(False)  # 禁用“连接全部”按钮
         for row in range(self.sshConfigTable.rowCount()):
             self.connect_selected(row)
@@ -238,12 +245,8 @@ class MainWindow(QMainWindow):
         # 延时0.1秒 确保当前worker为停止状态
         time.sleep(0.1)
 
-        # 可选：清理完成的worker
+        # 清理完成的worker
         self.workers = [w for w in self.workers if w.isRunning()]
-
-        # 打印每个worker的状态
-        # for w in self.workers:
-        #     print(f"Worker {w.row} is running: {w.isRunning()}")
 
         # 检查是否所有worker均已完成
         if not self.workers:

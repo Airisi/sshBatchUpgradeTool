@@ -122,7 +122,7 @@
                                     <item>
                                         <widget class="QPushButton" name="addSSHConfigButton">
                                             <property name="text">
-                                                <string>Add SSH Config</string>
+                                                <string>Add Config</string>
                                             </property>
                                         </widget>
                                     </item>
